@@ -41,7 +41,7 @@ Then, add *C:\vcpkg\installed\x64-windows\bin* and *C:\vcpkg\installed\x64-windo
 ### Note
 - DesType arguments are: SHITOMASI HARRIS FAST BRISK ORB AKAZE SIFT
 - DetType arguments are: BRIEF ORB FREAK AKAZE SIFT
-- If the "<DetType>" and "<DescType>" parameters are not passed to the project and test programs/scripts, the program will default to using the ORB detector and FREAK descriptor. If the "<DescType>" parameter is not passed, the program will default to using the FREAK descriptor.
+- If the `<DetType>` and `<DescType>` parameters are not passed to the project and test programs/scripts, the program will default to using the ORB detector and FREAK descriptor. If the `<DescType>` parameter is not passed, the program will default to using the FREAK descriptor.
 - The test script will try all the combinations, even if some of them are incompatible. To deal with these errors, modify err_handle to true in the main function; this will use the default detector and descriptor methods rather than the passed incompatible arguments.
 
 ## Project Steps
