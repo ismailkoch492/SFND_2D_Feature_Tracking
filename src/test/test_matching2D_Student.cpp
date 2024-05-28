@@ -1,7 +1,7 @@
 #include <numeric>
-#include "matching2D.hpp"
+#include "test_matching2D.hpp"
 
-// Version control for the SIFT detector and extractor
+// Version control for the SIFT detector end extractor
 // https://github.com/opencv/opencv/wiki/ChangeLog#version440
 #if CV_VERSION_MAJOR > 4 || (CV_VERSION_MAJOR == 4 && CV_VERSION_MINOR > 4)
     #define OPENCV_VERSION_GT_4_4
@@ -9,7 +9,7 @@
 
 using namespace std;
 
-// Find the best matches for the keypoints in two camera images based on several matching methods
+// Find best matches for keypoints in two camera images based on several matching methods
 void matchDescriptors(std::vector<cv::KeyPoint> &kPtsSource, std::vector<cv::KeyPoint> &kPtsRef, cv::Mat &descSource, cv::Mat &descRef,
                       std::vector<cv::DMatch> &matches, std::string descriptorType, std::string matcherType, std::string selectorType)
 {
@@ -25,7 +25,7 @@ void matchDescriptors(std::vector<cv::KeyPoint> &kPtsSource, std::vector<cv::Key
     }
     else if (matcherType.compare("MAT_FLANN") == 0)
     {   
-        // Comment out for SIFT detector - BRIEF extractor
+        // Comment out for the SIFT detector - BRIEF extractor
         /*if(descriptorType.compare("DES_HOG") == 0)
         {
             if (descSource.type() != CV_32F)
@@ -57,7 +57,7 @@ void matchDescriptors(std::vector<cv::KeyPoint> &kPtsSource, std::vector<cv::Key
             flann_matcher.knnMatch(descSource, descRef, knn_matches, k_size);
         else
             matcher->knnMatch(descSource, descRef, knn_matches, k_size);
-        // Filter matches using descriptor distance ratio test
+        // Filter the matches using a descriptor distance ratio test
         const float rat_thr = 0.8f;
         int rem_pts = 0;
         for (size_t i = 0; i < knn_matches.size(); i++)
@@ -71,7 +71,7 @@ void matchDescriptors(std::vector<cv::KeyPoint> &kPtsSource, std::vector<cv::Key
 }
 
 // Use one of the several types of state-of-art descriptors to uniquely identify the keypoints
-void descKeypoints(vector<cv::KeyPoint> &keypoints, cv::Mat &img, cv::Mat &descriptors, string descriptorType)
+void descKeypoints(std::vector<cv::KeyPoint> &keypoints, cv::Mat &img, cv::Mat &descriptors, std::string descriptorType, double* t_desc)
 {
     // Select an appropriate descriptor
     cv::Ptr<cv::DescriptorExtractor> extractor;
@@ -130,11 +130,12 @@ void descKeypoints(vector<cv::KeyPoint> &keypoints, cv::Mat &img, cv::Mat &descr
         t = ((double)cv::getTickCount() - t) / cv::getTickFrequency();
     }
     
-    cout << descriptorType << " descriptor extraction in " << 1000 * t / 1.0 << " ms" << endl;
+//cout << descriptorType << " descriptor extraction in " << 1000 * t / 1.0 << " ms" << endl;
+    *t_desc = 1000 * t / 1.0;
 }
 
-// Detect keypoints in image using the traditional Shi-Thomasi detector
-void detKeypointsShiTomasi(vector<cv::KeyPoint> &keypoints, cv::Mat &img, bool bVis)
+// Detect keypoints in the image using the traditional Shi-Thomasi detector
+void detKeypointsShiTomasi(std::vector<cv::KeyPoint> &keypoints, cv::Mat &img, double* t_det, bool bVis)
 {
     // Compute detector parameters based on the image size
     int blockSize = 4;       //  size of an average block for computing a derivative covariation matrix over each pixel neighborhood
@@ -160,7 +161,7 @@ void detKeypointsShiTomasi(vector<cv::KeyPoint> &keypoints, cv::Mat &img, bool b
         keypoints.push_back(newKeyPoint);
     }
     t = ((double)cv::getTickCount() - t) / cv::getTickFrequency();
-    cout << "Shi-Tomasi detection with n=" << keypoints.size() << " keypoints in " << 1000 * t / 1.0 << " ms" << endl;
+//cout << "Shi-Tomasi detection with n=" << keypoints.size() << " keypoints in " << 1000 * t / 1.0 << " ms" << endl;
 
     // Visualize the results
     if (bVis)
@@ -172,10 +173,12 @@ void detKeypointsShiTomasi(vector<cv::KeyPoint> &keypoints, cv::Mat &img, bool b
         imshow(windowName, visImage);
         cv::waitKey(0);
     }
+    *t_det = 1000 * t / 1.0;
+
 }
 
 // Detect keypoints in the image using the Harris detector
-void detKeypointsHarris(std::vector<cv::KeyPoint> &keypoints, cv::Mat &img, bool bVis)
+void detKeypointsHarris(std::vector<cv::KeyPoint> &keypoints, cv::Mat &img, double* t_det, bool bVis)
 {
     double t = (double)cv::getTickCount();
     // Detector parameters
@@ -228,9 +231,9 @@ void detKeypointsHarris(std::vector<cv::KeyPoint> &keypoints, cv::Mat &img, bool
         }
     }
     
-    cout << "HARRIS detector with n= " << keypoints.size() << " keypoints in " << 1000 * t / 1.0 << " ms" << endl;
+//cout << "HARRIS detector with n= " << keypoints.size() << " keypoints in " << 1000 * t / 1.0 << " ms" << endl;
     
-    // visualize keypoints
+    // Visualize the keypoints
     if(bVis)
     {
         string windowName = "Harris Corner Detection Results";
@@ -239,12 +242,12 @@ void detKeypointsHarris(std::vector<cv::KeyPoint> &keypoints, cv::Mat &img, bool
         cv::drawKeypoints(dst_norm_scaled, keypoints, visImage, cv::Scalar::all(-1), cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
         cv::imshow(windowName, visImage);
         cv::waitKey(0);
-    }  
-    
+    }
+    *t_det = 1000 * t / 1.0;
 }
 
 // Detect keypoints in the image using modern detectors
-void detKeypointsModern(std::vector<cv::KeyPoint> &keypoints, cv::Mat &img, std::string detectorType, bool bVis)
+void detKeypointsModern(std::vector<cv::KeyPoint> &keypoints, cv::Mat &img, std::string detectorType, double* t_det, bool bVis)
 {
     double t = (double)cv::getTickCount();
     cv::Ptr<cv::FeatureDetector> detector;
@@ -290,11 +293,11 @@ void detKeypointsModern(std::vector<cv::KeyPoint> &keypoints, cv::Mat &img, std:
         t = ((double)cv::getTickCount() - t) / cv::getTickFrequency();
     }
 
-    cout << detectorType << " detector with n= " << keypoints.size() << " keypoints in " << 1000 * t / 1.0 << " ms" << endl;
+//cout << detectorType << " detector with n= " << keypoints.size() << " keypoints in " << 1000 * t / 1.0 << " ms" << endl;
 
     if(bVis)
     {
-        // visualize results
+        // Visualize the results
         cv::Mat visImage = img.clone();
         cv::drawKeypoints(img, keypoints, visImage, cv::Scalar::all(-1), cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
         string windowName = detectorType + " Results";
@@ -302,4 +305,6 @@ void detKeypointsModern(std::vector<cv::KeyPoint> &keypoints, cv::Mat &img, std:
         imshow(windowName, visImage);
         cv::waitKey(0);
     }
+
+    *t_det = 1000 * t / 1.0;
 }

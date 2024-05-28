@@ -5,13 +5,13 @@
 #include <opencv2/core.hpp>
 
 
-struct DataFrame { // represents the available sensor information at the same time instance
+struct DataFrame { // Represents the available sensor information at the same time instance
     
-    cv::Mat cameraImg; // camera image
+    cv::Mat cameraImg; // A camera image
     
-    std::vector<cv::KeyPoint> keypoints; // 2D keypoints within camera image
-    cv::Mat descriptors; // keypoint descriptors
-    std::vector<cv::DMatch> kptMatches; // keypoint matches between previous and current frame
+    std::vector<cv::KeyPoint> keypoints; // 2D keypoints within the camera image
+    cv::Mat descriptors; // The keypoint descriptors
+    std::vector<cv::DMatch> kptMatches; // The keypoint matches between the previous and the current frame
 };
 
 

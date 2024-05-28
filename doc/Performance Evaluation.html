@@ -1,246 +1,24 @@
-# SFND 2D Feature Tracking
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
 
-<img src="images/keypoints.png" width="820" height="248" />
+<html>
+<head>
+	
+	<meta http-equiv="content-type" content="text/html; charset=utf-8"/>
+	<title></title>
+	<meta name="generator" content="LibreOffice 6.4.7.2 (Linux)"/>
+	<meta name="created" content="2022-12-15T11:07:09.300083465"/>
+	<meta name="changed" content="2022-12-19T14:36:56.387068463"/>
+	
+	<style type="text/css">
+		body,div,table,thead,tbody,tfoot,tr,th,td,p { font-family:"Liberation Sans"; font-size:x-small }
+		a.comment-indicator:hover + comment { background:#ffd; position:absolute; display:block; border:1px solid black; padding:0.5em;  } 
+		a.comment-indicator { background:red; display:inline-block; border:1px solid black; width:0.5em; height:0.5em;  } 
+		comment { display:none;  } 
+	</style>
+	
+</head>
 
-## Dependencies for Running Locally
-1. cmake >= 2.8
- * All OSes: [click here for installation instructions](https://cmake.org/install/)
-
-2. make >= 4.1 (Linux, Mac), 3.81 (Windows)
- * Linux: make is installed by default on most Linux distros
- * Mac: [install Xcode command line tools to get make](https://developer.apple.com/xcode/features/)
- * Windows: [Click here for installation instructions](http://gnuwin32.sourceforge.net/packages/make.htm)
-
-3. OpenCV >= 4.1
- * All OSes: refer to the [official instructions](https://docs.opencv.org/master/df/d65/tutorial_table_of_content_introduction.html)
- * This must be compiled from source using the `-D OPENCV_ENABLE_NONFREE=ON` cmake flag for testing the SIFT and SURF detectors. If using [homebrew](https://brew.sh/): `$> brew install --build-from-source opencv` will install required dependencies and compile opencv with the `opencv_contrib` module by default (no need to set `-DOPENCV_ENABLE_NONFREE=ON` manually). 
- * The OpenCV 4.1.0 source code can be found [here](https://github.com/opencv/opencv/tree/4.1.0)
-
-4. gcc/g++ >= 5.4
-  * Linux: gcc / g++ is installed by default on most Linux distros
-  * Mac: same deal as make - [install Xcode command line tools](https://developer.apple.com/xcode/features/)
-  * Windows: recommend using either [MinGW-w64](http://mingw-w64.org/doku.php/start) or [Microsoft's VCPKG, a C++ package manager](https://docs.microsoft.com/en-us/cpp/build/install-vcpkg?view=msvc-160&tabs=windows). VCPKG maintains its own binary distributions of OpenCV and many other packages. To see what packages are available, type `vcpkg search` at the command prompt. For example, once you've _VCPKG_ installed, you can install _OpenCV 4.1_ with the command:
-```bash
-c:\vcpkg> vcpkg install opencv4[nonfree,contrib]:x64-windows
-```
-Then, add *C:\vcpkg\installed\x64-windows\bin* and *C:\vcpkg\installed\x64-windows\debug\bin* to your user's _PATH_ variable. Also, set the _CMake Toolchain File_ to *c:\vcpkg\scripts\buildsystems\vcpkg.cmake*.
-
-
-## Basic Build Instructions
-
-1. Clone this repo.
-2. Make a build directory in the top level directory: `mkdir build && cd build`
-3. Compile: `cmake .. && make`
-
-## Run It
-1. Run the project manually: `./2D_feature_tracking <DetType> <DescType>`. Replace the <DetType> <DescType> with detector and descriptor types, respectively.
-2. Run the project via bash script: `chmod +x scripts/run_project.sh && ./scripts/run_project.sh`. Also, it will handle parameter passing and show an output checking whether the passed parameter(s) is/are invalid.
-3. Run the test manually: `./test <DetType> <DescType>`. 
-4. Run the test via bash script: `chmod +x scripts/run_test.sh && ./scripts/run_test.sh`. The test program will only show the point sizes and duration for each iteration, including all the available descriptor and detector combinations, only visualizing the last step.
-
-### Note
-- DesType arguments are: SHITOMASI HARRIS FAST BRISK ORB AKAZE SIFT
-- DetType arguments are: BRIEF ORB FREAK AKAZE SIFT
-- If the "<DetType>" and "<DescType>" parameters are not passed to the project and test programs/scripts, the program will default to using the ORB detector and FREAK descriptor. If the "<DescType>" parameter is not passed, the program will default to using the FREAK descriptor.
-- The test script will try all the combinations, even if some of them are incompatible. To deal with these errors, modify err_handle to true in the main function; this will use the default detector and descriptor methods rather than the passed incompatible arguments.
-
-## Project Steps
-
-### MP.1 Data Buffer Optimization
-
-For analysis with the constant velocity assumption, the data buffer size is set to 2. If the data buffer vector is full after a new image acquisition, the oldest element is removed from the vector, and the newly acquired image is added at the end.
-
-```cpp
-        DataFrame frame;
-        frame.cameraImg = imgGray;
-        if(imgIndex > (dataBufferSize - 1))
-            dataBuffer.erase(dataBuffer.begin());
-        dataBuffer.push_back(frame);
-```
-<img src="images/task_mp1.png" width="820" height="248" />
-
-### MP.2 Keypoint Detection
-
-This project uses the following methods to detect keypoints from images:
-- Shi-Tomasi
-- Harris
-- FAST (Features from Accelerated Segment Test)
-- BRISK (Binary Robust Invariant Scalable Keypoints)
-- ORB (Oriented FAST and Rotated BRIEF)
-- AKAZE (Accelerated-KAZE)
-- SIFT (Scale-Invariant Feature Transform)
-
-```cpp
-        if (detectorType.compare("SHITOMASI") == 0)
-        {
-            detKeypointsShiTomasi(keypoints, imgGray, false);
-        }
-        else
-        {
-            if(detectorType.compare("HARRIS") == 0)
-                detKeypointsHarris(keypoints, imgGray, false);
-            else
-                detKeypointsModern(keypoints, imgGray, detectorType, false);
-		}
-```
-
-### MP.3 Keypoint Removal
-
-A rectangle was defined to select the area encapsulating the preceding car, and the keypoints remaining outside the rectangle were removed.
-
-```cpp
-        bool bFocusOnVehicle = true;
-        cv::Rect vehicleRect(535, 180, 180, 150);
-        if (bFocusOnVehicle)
-        {
-            vector<cv::KeyPoint> rect_kpts;
-            for(auto &itr : keypoints)
-            {
-                if(vehicleRect.contains(itr.pt)) 
-                    rect_kpts.push_back(itr);
-            }
-            keypoints.clear();
-            keypoints = rect_kpts;
-        }
-```
-### MP.4 Keypoint Descriptors
-
-The descriptor type was selected manually and passed into the __descKeypoints()__ function.
-
-```cpp
-        cv::Mat descriptors;
-        string descriptorType = "BRIEF";
-        descKeypoints((dataBuffer.end() - 1)->keypoints, (dataBuffer.end() - 1)->cameraImg, descriptors, descriptorType);
-```      
-
-### MP.5 Descriptor Matching
-
-The following methods are used as descriptor types:
-- BRIEF 
-- ORB
-- FREAK
-- AKAZE
-- SIFT
-
-```cpp
-void descKeypoints(vector<cv::KeyPoint> &keypoints, cv::Mat &img, cv::Mat &descriptors, string descriptorType)
-{
-    // select appropriate descriptor
-    cv::Ptr<cv::DescriptorExtractor> extractor;
-    double t = (double)cv::getTickCount();
-
-    if (descriptorType.compare("BRISK") == 0)
-    {
-
-        int threshold = 30;        // FAST/AGAST detection threshold score.
-        int octaves = 3;           // detection octaves (use 0 to do single scale)
-        float patternScale = 1.0f; // apply this scale to the pattern used for sampling the neighbourhood of a keypoint.
-
-        extractor = cv::BRISK::create(threshold, octaves, patternScale);
-    }
-    else
-    {
-        //// -> BRIEF, ORB, FREAK, AKAZE, SIFT
-        if(descriptorType.compare("BRIEF") == 0)
-        {
-            extractor = cv::xfeatures2d::BriefDescriptorExtractor::create();
-        }
-        else if(descriptorType.compare("ORB") == 0)
-        {
-            extractor = cv::ORB::create();
-        }
-        else if(descriptorType.compare("FREAK") == 0)
-        {
-            extractor = cv::xfeatures2d::FREAK::create();
-        }
-        else if(descriptorType.compare("AKAZE") == 0)
-        {
-            extractor = cv::AKAZE::create();
-            t = (double)cv::getTickCount();
-            extractor->compute(img, keypoints, descriptors);
-            t = ((double)cv::getTickCount() - t) / cv::getTickFrequency();
-        }
-        else if(descriptorType.compare("SIFT") == 0)
-        {
-            extractor = cv::xfeatures2d::SIFT::create();
-        }
-    }
-
-    // perform feature description
-    if(descriptorType.compare("AKAZE") != 0)
-    {
-        t = (double)cv::getTickCount();
-        extractor->compute(img, keypoints, descriptors);
-        t = ((double)cv::getTickCount() - t) / cv::getTickFrequency();
-    }
-    
-    cout << descriptorType << " descriptor extraction in " << 1000 * t / 1.0 << " ms" << endl;
-}
-```
-
-### MP.6 Descriptor Distance Ratio
-
-Brute-force matching is used with the NN (nearest neighbor) matching task. Depending on the descriptor type, it is used with either Hamming-norm, which is compatible with binary descriptors (ORB, BRISK, and BRIEF), or L2-norm, which is compatible with HOG descriptors (SIFT). FLANN matching is the alternative to brute-force matching and is used with KNN (K-Nearest Neighbor) matching tasks.
-
-```cpp
-void matchDescriptors(std::vector<cv::KeyPoint> &kPtsSource, std::vector<cv::KeyPoint> &kPtsRef, cv::Mat &descSource, cv::Mat &descRef, std::vector<cv::DMatch> &matches, std::string descriptorType, std::string matcherType, std::string selectorType)
-{
-    // configure matcher
-    bool crossCheck = false;
-    cv::Ptr<cv::DescriptorMatcher> matcher;
-    cv::FlannBasedMatcher flann_matcher(new cv::flann::LshIndexParams(20, 10, 20));
-
-    if (matcherType.compare("MAT_BF") == 0)
-    {
-        int normType = descriptorType.compare("DES_HOG") == 0 ? cv::NORM_L2 : cv::NORM_HAMMING;
-        matcher = cv::BFMatcher::create(normType, crossCheck);
-    }
-    else if (matcherType.compare("MAT_FLANN") == 0)
-    {   
-        cout << "FLANN matching" << endl;     
-    }
-
-    // perform matching task
-    if (selectorType.compare("SEL_NN") == 0)
-    { // nearest neighbor (best match)
-
-        matcher->match(descSource, descRef, matches); // Finds the best match for each descriptor in desc1
-    }
-    else if (selectorType.compare("SEL_KNN") == 0)
-    { // k nearest neighbors (k=2)
-        const int k_size = 2;
-        std::vector<std::vector<cv::DMatch>> knn_matches;
-        if(matcherType.compare("MAT_FLANN") == 0)
-            flann_matcher.knnMatch(descSource, descRef, knn_matches, k_size);
-        else
-            matcher->knnMatch(descSource, descRef, knn_matches, k_size);
-        // Filter matches using descriptor distance ratio test
-        const float rat_thr = 0.8f;
-        int rem_pts = 0;
-        for (size_t i = 0; i < knn_matches.size(); i++)
-        {
-            if (knn_matches[i][0].distance < rat_thr * knn_matches[i][1].distance)
-                matches.push_back(knn_matches[i][0]);
-            else
-                rem_pts += 1;
-        }
-    }
-}
-```
-
-### MP.7 - MP.9 Performance Evaluation
-
-As a result, the AKAZE descriptor could be run only with the AKAZE detector. Also, the SIFT keypoint detector wasn't compatible with the ORB detector.
-
-Orientations were obtained with the SIFT, BRIEF, ORB, and AKAZE keypoint detectors. The SIFT keypoint detector took longer than other methods, so this method isn't practical for real-time applications. Also, some keypoint matching errors were observed, which is another drawback of this detector. The AKAZE and BRIEF keypoint detectors did well and are valid for real-time applications, but the ORB keypoint detector is a better choice for rapid applications that need orientations. The AKAZE and BRIEF keypoint detectors obtained more keypoints than the ORB keypoint detector. The AKAZE, BRIEF, and ORB keypoint detectors produced less error than the SIFT keypoint detector. The first keypoint detection process via the ORB keypoint detector takes longer than the following processes, which is a disadvantage of this method.
-
-The Shi-Tomasi, Harris, and FAST detectors obtain no orientation. Shi-Tomasi keypoint detector detected keypoints with few errors. The Harris detector detected fewer keypoints with no errors, while the FAST keypoint detector detected keypoints swiftly with few errors.
-
-The top 3 Detectors-Descriptors are:
-- BRISK-BRIEF (Detecting keypoints with orientation, many keypoints)
-- ORB-BRIEF (Detecting keypoint with orientation, less process time)
-- FAST-BRIEF (Detecting keypoints without orientation, less process time)
-
+<body>
 <table cellspacing="0" border="0">
 	<colgroup width="112"></colgroup>
 	<colgroup width="80"></colgroup>
@@ -425,7 +203,78 @@ The top 3 Detectors-Descriptors are:
 		<td style="border-bottom: 3px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" align="center" valign=middle>{19.81, 17.60, 16.43, 16.52, 16.61, 16.52, 17.06, 16.86, 16.68, 16.47}</td>
 		<td style="border-bottom: 3px solid #000000; border-right: 1px solid #000000" align="center" valign=middle>{63.81, 41.27, 40.55, 44.39, 39.58, 39.68, 41.21, 40.67, 44.61, 44.31}</td>
 		</tr>
+	<tr>
+		<td height="17" align="left"><br></td>
+		<td align="left"><br></td>
+		<td align="left"><br></td>
+		<td align="left"><br></td>
+		<td align="left"><br></td>
+		<td align="left"><br></td>
+		<td align="left"><br></td>
+		<td align="left"><br></td>
+	</tr>
+	<tr>
+		<td height="17" align="left"><br></td>
+		<td align="left"><br></td>
+		<td align="left"><br></td>
+		<td align="left"><br></td>
+		<td align="left"><br></td>
+		<td align="left"><br></td>
+		<td align="left"><br></td>
+		<td align="left"><br></td>
+	</tr>
+	<tr>
+		<td height="17" align="left"><br></td>
+		<td align="left"><br></td>
+		<td align="left"><br></td>
+		<td align="left"><br></td>
+		<td align="left"><br></td>
+		<td align="left"><br></td>
+		<td align="left"><br></td>
+		<td align="left"><br></td>
+	</tr>
+	<tr>
+		<td height="20" align="center" valign=middle><font face="Liberation Serif,Times New Roman" size=3><br></font></td>
+		<td align="left"><br></td>
+		<td align="left"><br></td>
+		<td align="center"><font face="Liberation Serif,Times New Roman" size=3><br></font></td>
+		<td align="center"><font face="Liberation Serif,Times New Roman" size=3><br></font></td>
+		<td align="center"><font face="Liberation Serif,Times New Roman" size=3><br></font></td>
+		<td align="center"><font face="Liberation Serif,Times New Roman" size=3><br></font></td>
+		<td align="center"><font face="Liberation Serif,Times New Roman" size=3><br></font></td>
+	</tr>
+	<tr>
+		<td style="border-top: 1px solid #000000; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" colspan=5 height="20" align="center" valign=middle>TOP 3 Detector-Descriptor</td>
+		<td align="center" valign=middle><font face="Liberation Serif,Times New Roman" size=3><br></font></td>
+		<td align="center" valign=middle><font face="Liberation Serif,Times New Roman" size=3><br></font></td>
+		<td align="center" valign=middle><font face="Liberation Serif,Times New Roman" size=3><br></font></td>
+	</tr>
+	<tr>
+		<td style="border-top: 1px solid #000000; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" height="17" align="center">ORB</td>
+		<td style="border-top: 1px solid #000000; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" align="center">ORB</td>
+		<td style="border-top: 1px solid #000000; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" colspan=3 align="center" valign=middle>Except for the first image, the detector and descriptor took a short amount of time, and orientations were obtained.</td>
+		<td align="left"><br></td>
+		<td align="left"><br></td>
+		<td align="left"><br></td>
+	</tr>
+	<tr>
+		<td style="border-top: 1px solid #000000; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" height="17" align="center">FAST</td>
+		<td style="border-top: 1px solid #000000; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" align="center">BRIEF</td>
+		<td style="border-top: 1px solid #000000; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" colspan=3 align="center" valign=middle>This combination is the fastest method for point matching.</td>
+		<td align="left"><br></td>
+		<td align="left"><br></td>
+		<td align="left"><br></td>
+	</tr>
+	<tr>
+		<td style="border-top: 1px solid #000000; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" height="17" align="center">SHI-TOMASI</td>
+		<td style="border-top: 1px solid #000000; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" align="center">BRIEF</td>
+		<td style="border-top: 1px solid #000000; border-bottom: 1px solid #000000; border-left: 1px solid #000000; border-right: 1px solid #000000" colspan=3 align="center" valign=middle>Point matching was completed with few errors in a short amount of time.</td>
+		<td align="left"><br></td>
+		<td align="left"><br></td>
+		<td align="left"><br></td>
+	</tr>
 </table>
 <!-- ************************************************************************** -->
 </body>
 
+</html>
