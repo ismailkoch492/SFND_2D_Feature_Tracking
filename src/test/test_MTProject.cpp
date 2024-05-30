@@ -29,7 +29,7 @@ void evaluate(string det_type, string desc_type)
     string imgBasePath = dataPath + "images/";
     string imgPrefix = "KITTI/2011_09_26/image_00/data/000000"; // left camera, color
     string imgFileType = ".png";
-    int imgStartIndex = 0; // The first file index to load (assumes Lidar and camera names have identical naming convention)
+    int imgStartIndex = 0; // The first file index to load
     int imgEndIndex = 9;   // The last file index to load
     int imgFillWidth = 4;  // The number of digits which make up the file index (e.g. img-0001.png)
 

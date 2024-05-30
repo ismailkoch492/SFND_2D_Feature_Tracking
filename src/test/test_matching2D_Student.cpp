@@ -4,7 +4,7 @@
 // Version control for the SIFT detector end extractor
 // https://github.com/opencv/opencv/wiki/ChangeLog#version440
 #if CV_VERSION_MAJOR > 4 || (CV_VERSION_MAJOR == 4 && CV_VERSION_MINOR > 4)
-    #define OPENCV_VERSION_GT_4_4
+    #define OPENCV_VERSION_GE_4_4
 #endif
 
 using namespace std;
@@ -114,7 +114,7 @@ void descKeypoints(std::vector<cv::KeyPoint> &keypoints, cv::Mat &img, cv::Mat &
         }
         else if(descriptorType.compare("SIFT") == 0)
         {
-#ifdef OPENCV_VERSION_GT_4_4
+#ifdef OPENCV_VERSION_GE_4_4
             extractor = cv::SIFT::create();
 #else
             extractor = cv::xfeatures2d::SIFT::create();
@@ -273,7 +273,7 @@ void detKeypointsModern(std::vector<cv::KeyPoint> &keypoints, cv::Mat &img, std:
 
     else if(detectorType.compare("SIFT")==0)
     {
-#ifdef OPENCV_VERSION_GT_4_4
+#ifdef OPENCV_VERSION_GE_4_4
         detector = cv::SIFT::create();
 #else
         detector = cv::xfeatures2d::SIFT::create();

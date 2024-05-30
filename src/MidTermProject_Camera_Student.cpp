@@ -101,15 +101,14 @@ int main(int argc, const char *argv[])
     }
 
     /* INIT VARIABLES AND DATA STRUCTURES */
-
-    // The data path of the dataset
+    // The path of the dataset
     string dataPath = "../";
 
-    // The path of the camera
+    // The path of the camera images
     string imgBasePath = dataPath + "images/";
     string imgPrefix = "KITTI/2011_09_26/image_00/data/000000"; // left camera, color
     string imgFileType = ".png";
-    int imgStartIndex = 0; // The first file index to load (assumes Lidar and camera names have identical naming convention)
+    int imgStartIndex = 0; // The first file index to load
     int imgEndIndex = 9;   // The last file index to load
     int imgFillWidth = 4;  // The number of digits which make up the file index (e.g. img-0001.png)
 
@@ -119,8 +118,6 @@ int main(int argc, const char *argv[])
     bool bVis = false;            // Visualize the results
 
     string str_kpts, str_time;
-//string det_type = argv[1];     // SHITOMASI, HARRIS, FAST, BRISK, [ORB], AKAZE, SIFT
-//string desc_type = argv[2];        // BRIEF, ORB, [FREAK], AKAZE, SIFT
 
     /* MAIN LOOP OVER ALL IMAGES */
     for (size_t imgIndex = 0; imgIndex <= imgEndIndex - imgStartIndex; imgIndex++)
@@ -153,8 +150,7 @@ int main(int argc, const char *argv[])
         /* DETECT IMAGE KEYPOINTS */
 
         // Extract 2D keypoints from the current image.
-        vector<cv::KeyPoint> keypoints; 
-        // Generate an empty feature list for the current image
+        vector<cv::KeyPoint> keypoints; // generate an empty feature list for the current image
         string detectorType = det_type;
 
         //// STUDENT ASSIGNMENT

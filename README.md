@@ -34,9 +34,9 @@ Then, add *C:\vcpkg\installed\x64-windows\bin* and *C:\vcpkg\installed\x64-windo
 
 ## Run It
 1. Run the project manually: `./2D_feature_tracking <DetType> <DescType>`. Replace the <DetType> <DescType> with detector and descriptor types, respectively.
-2. Run the project via bash script: `chmod +x scripts/run_project.sh && ./scripts/run_project.sh`. Also, it will handle parameter passing and show an output checking whether the passed parameter(s) is/are invalid.
+2. Run the project via the bash script: `chmod +x scripts/run_project.sh && ./scripts/run_project.sh`. Also, it will handle parameter passing and show an output checking whether the passed parameter(s) is/are invalid.
 3. Run the test manually: `./test <DetType> <DescType>`. 
-4. Run the test via bash script: `chmod +x scripts/run_test.sh && ./scripts/run_test.sh`. The test program will only show the point sizes and duration for each iteration, including all the available descriptor and detector combinations, only visualizing the last step.
+4. Run the test via the bash script: `chmod +x scripts/run_test.sh && ./scripts/run_test.sh`. The test program will only show the point sizes and duration for each iteration, including all the available descriptor and detector combinations, only visualizing the last step.
 
 ### Note
 - DesType arguments are: SHITOMASI HARRIS FAST BRISK ORB AKAZE SIFT
@@ -81,7 +81,7 @@ This project uses the following methods to detect keypoints from images:
                 detKeypointsHarris(keypoints, imgGray, false);
             else
                 detKeypointsModern(keypoints, imgGray, detectorType, false);
-		}
+        }
 ```
 
 ### MP.3 Keypoint Removal
@@ -123,6 +123,10 @@ The following methods are used as descriptor types:
 - SIFT
 
 ```cpp
+#if CV_VERSION_MAJOR > 4 || (CV_VERSION_MAJOR == 4 && CV_VERSION_MINOR > 4)
+    #define OPENCV_VERSION_GE_4_4
+#endif
+
 void descKeypoints(vector<cv::KeyPoint> &keypoints, cv::Mat &img, cv::Mat &descriptors, string descriptorType)
 {
     // select appropriate descriptor
@@ -162,7 +166,11 @@ void descKeypoints(vector<cv::KeyPoint> &keypoints, cv::Mat &img, cv::Mat &descr
         }
         else if(descriptorType.compare("SIFT") == 0)
         {
+#ifdef OPENCV_VERSION_GE_4_4
+            extractor = cv::SIFT::create();
+#else
             extractor = cv::xfeatures2d::SIFT::create();
+#endif
         }
     }
 
@@ -183,9 +191,10 @@ void descKeypoints(vector<cv::KeyPoint> &keypoints, cv::Mat &img, cv::Mat &descr
 Brute-force matching is used with the NN (nearest neighbor) matching task. Depending on the descriptor type, it is used with either Hamming-norm, which is compatible with binary descriptors (ORB, BRISK, and BRIEF), or L2-norm, which is compatible with HOG descriptors (SIFT). FLANN matching is the alternative to brute-force matching and is used with KNN (K-Nearest Neighbor) matching tasks.
 
 ```cpp
-void matchDescriptors(std::vector<cv::KeyPoint> &kPtsSource, std::vector<cv::KeyPoint> &kPtsRef, cv::Mat &descSource, cv::Mat &descRef, std::vector<cv::DMatch> &matches, std::string descriptorType, std::string matcherType, std::string selectorType)
+void matchDescriptors(std::vector<cv::KeyPoint> &kPtsSource, std::vector<cv::KeyPoint> &kPtsRef, cv::Mat &descSource, cv::Mat &descRef,
+                      std::vector<cv::DMatch> &matches, std::string descriptorType, std::string matcherType, std::string selectorType)
 {
-    // configure matcher
+	// Configure the matcher
     bool crossCheck = false;
     cv::Ptr<cv::DescriptorMatcher> matcher;
     cv::FlannBasedMatcher flann_matcher(new cv::flann::LshIndexParams(20, 10, 20));
@@ -200,10 +209,9 @@ void matchDescriptors(std::vector<cv::KeyPoint> &kPtsSource, std::vector<cv::Key
         cout << "FLANN matching" << endl;     
     }
 
-    // perform matching task
+    // Perform the matching task
     if (selectorType.compare("SEL_NN") == 0)
     { // nearest neighbor (best match)
-
         matcher->match(descSource, descRef, matches); // Finds the best match for each descriptor in desc1
     }
     else if (selectorType.compare("SEL_KNN") == 0)
@@ -214,7 +222,7 @@ void matchDescriptors(std::vector<cv::KeyPoint> &kPtsSource, std::vector<cv::Key
             flann_matcher.knnMatch(descSource, descRef, knn_matches, k_size);
         else
             matcher->knnMatch(descSource, descRef, knn_matches, k_size);
-        // Filter matches using descriptor distance ratio test
+        // Filter matches by using descriptor distance ratio test
         const float rat_thr = 0.8f;
         int rem_pts = 0;
         for (size_t i = 0; i < knn_matches.size(); i++)

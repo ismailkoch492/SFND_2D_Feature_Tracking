@@ -4,7 +4,7 @@
 // Version control for the SIFT detector and extractor
 // https://github.com/opencv/opencv/wiki/ChangeLog#version440
 #if CV_VERSION_MAJOR > 4 || (CV_VERSION_MAJOR == 4 && CV_VERSION_MINOR > 4)
-    #define OPENCV_VERSION_GT_4_4
+    #define OPENCV_VERSION_GE_4_4
 #endif
 
 using namespace std;
@@ -25,11 +25,11 @@ void matchDescriptors(std::vector<cv::KeyPoint> &kPtsSource, std::vector<cv::Key
     }
     else if (matcherType.compare("MAT_FLANN") == 0)
     {   
-        // Comment out for SIFT detector - BRIEF extractor
+        // Comment out for the SIFT detector - BRIEF extractor combination
         /*if(descriptorType.compare("DES_HOG") == 0)
         {
             if (descSource.type() != CV_32F)
-            { // OpenCV bug workaround : convert binary descriptors to floating point due to a bug in current OpenCV implementation
+            { // OpenCV bug workaround : convert binary descriptors to floating point due to a bug in the current OpenCV implementation
             //https://stackoverflow.com/questions/29694490/flann-error-in-opencv-3
                 descSource.convertTo(descSource, CV_32F);
                 descRef.convertTo(descRef, CV_32F);
@@ -39,13 +39,11 @@ void matchDescriptors(std::vector<cv::KeyPoint> &kPtsSource, std::vector<cv::Key
     
         cout << "FLANN matching" << endl;
         //matcher = cv::FlannBasedMatcher::create();
-        
     }
 
     // Perform the matching task
     if (selectorType.compare("SEL_NN") == 0)
     { // nearest neighbor (best match)
-
         matcher->match(descSource, descRef, matches); // Finds the best match for each descriptor in desc1
     }
     else if (selectorType.compare("SEL_KNN") == 0)
@@ -57,7 +55,7 @@ void matchDescriptors(std::vector<cv::KeyPoint> &kPtsSource, std::vector<cv::Key
             flann_matcher.knnMatch(descSource, descRef, knn_matches, k_size);
         else
             matcher->knnMatch(descSource, descRef, knn_matches, k_size);
-        // Filter matches using descriptor distance ratio test
+        // Filter matches by using descriptor distance ratio test
         const float rat_thr = 0.8f;
         int rem_pts = 0;
         for (size_t i = 0; i < knn_matches.size(); i++)
@@ -69,6 +67,7 @@ void matchDescriptors(std::vector<cv::KeyPoint> &kPtsSource, std::vector<cv::Key
         }
     }
 }
+
 
 // Use one of the several types of state-of-art descriptors to uniquely identify the keypoints
 void descKeypoints(vector<cv::KeyPoint> &keypoints, cv::Mat &img, cv::Mat &descriptors, string descriptorType)
@@ -114,7 +113,7 @@ void descKeypoints(vector<cv::KeyPoint> &keypoints, cv::Mat &img, cv::Mat &descr
         }
         else if(descriptorType.compare("SIFT") == 0)
         {
-#ifdef OPENCV_VERSION_GT_4_4
+#ifdef OPENCV_VERSION_GE_4_4
             extractor = cv::SIFT::create();
 #else
             extractor = cv::xfeatures2d::SIFT::create();
@@ -133,7 +132,8 @@ void descKeypoints(vector<cv::KeyPoint> &keypoints, cv::Mat &img, cv::Mat &descr
     cout << descriptorType << " descriptor extraction in " << 1000 * t / 1.0 << " ms" << endl;
 }
 
-// Detect keypoints in image using the traditional Shi-Thomasi detector
+
+// Detect keypoints in the image using the traditional Shi-Thomasi detector
 void detKeypointsShiTomasi(vector<cv::KeyPoint> &keypoints, cv::Mat &img, bool bVis)
 {
     // Compute detector parameters based on the image size
@@ -174,6 +174,7 @@ void detKeypointsShiTomasi(vector<cv::KeyPoint> &keypoints, cv::Mat &img, bool b
     }
 }
 
+
 // Detect keypoints in the image using the Harris detector
 void detKeypointsHarris(std::vector<cv::KeyPoint> &keypoints, cv::Mat &img, bool bVis)
 {
@@ -183,7 +184,7 @@ void detKeypointsHarris(std::vector<cv::KeyPoint> &keypoints, cv::Mat &img, bool
     int apertureSize = 3;  // aperture parameter for Sobel operator (must be odd)
     int minResponse = 100; // minimum value for a corner in the 8bit scaled response matrix
     double k = 0.04;       // Harris parameter (see equation for details)
-    // Detect Harris corners and normalize output
+    // Detect Harris corners and normalize the output
     cv::Mat dst, dst_norm, dst_norm_scaled;
     dst = cv::Mat::zeros(img.size(), CV_32FC1);
     t = (double)cv::getTickCount();
@@ -230,7 +231,7 @@ void detKeypointsHarris(std::vector<cv::KeyPoint> &keypoints, cv::Mat &img, bool
     
     cout << "HARRIS detector with n= " << keypoints.size() << " keypoints in " << 1000 * t / 1.0 << " ms" << endl;
     
-    // visualize keypoints
+    // Visualize the keypoints
     if(bVis)
     {
         string windowName = "Harris Corner Detection Results";
@@ -242,6 +243,7 @@ void detKeypointsHarris(std::vector<cv::KeyPoint> &keypoints, cv::Mat &img, bool
     }  
     
 }
+
 
 // Detect keypoints in the image using modern detectors
 void detKeypointsModern(std::vector<cv::KeyPoint> &keypoints, cv::Mat &img, std::string detectorType, bool bVis)
@@ -270,7 +272,7 @@ void detKeypointsModern(std::vector<cv::KeyPoint> &keypoints, cv::Mat &img, std:
 
     else if(detectorType.compare("SIFT")==0)
     {
-#ifdef OPENCV_VERSION_GT_4_4
+#ifdef OPENCV_VERSION_GE_4_4
         detector = cv::SIFT::create();
 #else
         detector = cv::xfeatures2d::SIFT::create();
@@ -294,7 +296,7 @@ void detKeypointsModern(std::vector<cv::KeyPoint> &keypoints, cv::Mat &img, std:
 
     if(bVis)
     {
-        // visualize results
+        // Visualize the results
         cv::Mat visImage = img.clone();
         cv::drawKeypoints(img, keypoints, visImage, cv::Scalar::all(-1), cv::DrawMatchesFlags::DRAW_RICH_KEYPOINTS);
         string windowName = detectorType + " Results";
